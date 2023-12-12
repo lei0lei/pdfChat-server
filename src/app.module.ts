@@ -6,7 +6,7 @@ import { MessageExchangeModule } from './message-exchange/message-exchange.modul
 
 
 @Module({
-  imports: [FileUploadModule, MessageExchangeModule],
+  imports: [],
   controllers: [AppController],
   providers: [AppService],
 })

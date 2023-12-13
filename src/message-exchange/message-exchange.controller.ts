@@ -20,7 +20,7 @@ const embeddings = new OpenAIEmbeddings({openAIApiKey:openAIApiKey});
 export class MessageExchangeController {
   @Post('textMessageUpload')
   async receiveTextMessage(@Body() body: any) {
-    // console.log(body); // 查看文本消息内容
+    console.log(body); // 查看文本消息内容
     
     // 这里你可以实现处理和保存消息的逻辑
     // ...

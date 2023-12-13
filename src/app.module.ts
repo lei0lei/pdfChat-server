@@ -5,8 +5,13 @@ import { FileUploadModule } from './file-upload/file-upload.module';
 import { MessageExchangeModule } from './message-exchange/message-exchange.module';
 
 
+import { ConfigModule } from '@nestjs/config';
+
+
 @Module({
-  imports: [MessageExchangeModule],
+  imports: [MessageExchangeModule,ConfigModule.forRoot({
+    isGlobal: true
+  }),],
   controllers: [AppController],
   providers: [AppService],
 })

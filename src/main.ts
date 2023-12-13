@@ -18,7 +18,7 @@ async function bootstrap() {
   // });
   const cors = require('cors');
   app.use(cors({
-      origin: 'http://example.com', // use your actual domain name (or localhost), using * is not recommended
+      origin: 'http://localhost:3000', // use your actual domain name (or localhost), using * is not recommended
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Origin', 'X-Requested-With', 'Accept', 'x-client-key', 'x-client-token', 'x-client-secret', 'Authorization'],
       credentials: true

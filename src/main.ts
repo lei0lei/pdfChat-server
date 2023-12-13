@@ -23,7 +23,7 @@ async function bootstrap() {
   //     allowedHeaders: ['Content-Type', 'Origin', 'X-Requested-With', 'Accept', 'x-client-key', 'x-client-token', 'x-client-secret', 'Authorization'],
   //     credentials: true
   // }));
-  app.use(cors())
+  app.enableCors()
   await app.listen(port);
 }
 bootstrap();

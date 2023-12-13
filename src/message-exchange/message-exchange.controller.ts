@@ -48,7 +48,7 @@ export class MessageExchangeController {
 
     return {
       statusCode: 200,
-      message: result,
+      message: body.docs,
     };
   }
 }

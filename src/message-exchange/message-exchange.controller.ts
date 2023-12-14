@@ -53,7 +53,7 @@ export class MessageExchangeController {
      
     return {
       statusCode: 200,
-      message: body,
+      message: result,
     };
   }
 }

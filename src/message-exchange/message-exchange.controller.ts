@@ -8,6 +8,7 @@ import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { Document } from "langchain/document";
 
+
 const openAIApiKey = process.env.REACT_APP_openAIApiKey
 const textSplitter = new RecursiveCharacterTextSplitter({
           chunkSize: 1500,

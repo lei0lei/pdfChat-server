@@ -3,13 +3,13 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { FileUploadModule } from './file-upload/file-upload.module';
 import { MessageExchangeModule } from './message-exchange/message-exchange.module';
-import { CorsModule } from '@nestjs/cors';
+
 
 import { ConfigModule } from '@nestjs/config';
 
 
 @Module({
-  imports: [CorsModule,MessageExchangeModule,ConfigModule.forRoot({
+  imports: [MessageExchangeModule,ConfigModule.forRoot({
     isGlobal: true
   }),],
   controllers: [AppController],

@@ -8,12 +8,12 @@ import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { Document } from "langchain/document";
 
-const openAIApiKey = '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'
+const openAIApiKey = process.env.REACT_APP_openAIApiKey
 const textSplitter = new RecursiveCharacterTextSplitter({
           chunkSize: 1500,
           chunkOverlap: 200,
         });
-const model = new ChatOpenAI({ modelName: "gpt-3.5-turbo" ,openAIApiKey:openAIApiKey});
+const model = new ChatOpenAI({ modelName: "gpt-4" ,openAIApiKey:openAIApiKey});
 const embeddings = new OpenAIEmbeddings({openAIApiKey:openAIApiKey});
 
 @Controller('messageExchange')

@@ -5,11 +5,17 @@ import {
         OnGatewayConnection,
         OnGatewayDisconnect
       } from '@nestjs/websockets';
-      import { Server, Socket } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
-@WebSocketGateway({namespace: '/ws'})
+@WebSocketGateway({namespace: '/ws',
+cors: {
+    origin: '*', // 允许所有来源
+    methods: ["GET", "POST"], // 允许的方法
+    allowedHeaders: ["my-custom-header"], // 可选的头部
+    credentials: false // 需要证书
+} })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer()
     server: Server;

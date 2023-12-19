@@ -53,7 +53,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private finalText = ''
     private sessionID;
     private conversationID;
-    private openAIApiKey = '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'//process.env.REACT_APP_openAIApiKey;
+    private openAIApiKey = process.env.REACT_APP_openAIApiKey;
     private textSplitter = new RecursiveCharacterTextSplitter({
         chunkSize: 1500,
         chunkOverlap: 200,

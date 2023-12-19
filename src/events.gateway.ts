@@ -12,7 +12,31 @@ import fs from 'fs';
 
 import {docItemService} from './doc_info.service'
 import { docItem } from './doc_info.entity';
+import { ConversationalRetrievalQAChain } from "langchain/chains";
+import { BufferMemory } from "langchain/memory";
+import { ChatOpenAI } from "langchain/chat_models/openai";
 
+import { MemoryVectorStore } from "langchain/vectorstores/memory";
+import { OpenAIEmbeddings } from "langchain/embeddings/openai";
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { Document } from "langchain/document";
+  // const splitDocs = await textSplitter.splitDocuments([
+    //       new Document({ pageContent: body.docs }),
+    //     ])
+
+    // const vectorStore = await MemoryVectorStore.fromDocuments(splitDocs, embeddings);
+    // const memory = new BufferMemory({
+    //   memoryKey: "chat_history",
+    //   returnMessages: true,
+    // });
+
+    // const chain = ConversationalRetrievalQAChain.fromLLM(
+    //   model,
+    //   vectorStore.asRetriever(),
+    //   {
+    //     memory,
+    //   }
+    // );
 
 @WebSocketGateway({namespace: '/ws',
 cors: {
@@ -27,10 +51,19 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     server: Server;
     private seqenceId = 0;
     private finalText = ''
-    private model = {
-        id: 1,
-        date: 'initial state'
-    }
+    private sessionID;
+    private conversationID;
+    private openAIApiKey = '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'//process.env.REACT_APP_openAIApiKey;
+    private textSplitter = new RecursiveCharacterTextSplitter({
+        chunkSize: 1500,
+        chunkOverlap: 200,
+      });;
+    private model;
+    private embeddings;
+    private splitDocs;
+    private vectorStore;
+    private memory;
+    private chain;
 
     handleConnection(client: any, ...args: any[]) {
         console.log('Client connected:', client.id);
@@ -50,9 +83,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage('getSession')
     handleGetSession(client: any, payload: any): string {
         console.log('message received', payload)
-        const sessionID = uuidv4();
-        const conversationID = uuidv4();
-        client.emit('IDs', { sessionID, conversationID });
+        this.sessionID = uuidv4();
+        this.conversationID = uuidv4();
+        client.emit('IDs', { sessionID: this.sessionID, conversationID: this.conversationID });
         return 'hello';
     }
 
@@ -85,26 +118,60 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
             docItemInstance.doc_name = fileContent.fileName;
             docItemInstance.doc_url = fileContent.fileUrl;
             docItemInstance.doc_type = 'pdf';
+            var CryptoJS = require("crypto-js");
             docItemInstance.doc_sha256 = fileContent.fileSha256;
             docItemInstance.doc_available = true;
             docItemInstance.user_belonged = 'testman';
             // Add docItem to the array
+            console.log(docItemInstance)
             newDocItems.push(docItemInstance);
         }
 
         // Save the docItems to the database
         const savedDocItems = await this.docItemService.insertDocs(newDocItems);
 
+        //save the embeddings
 
 
+        //set the chain 
+        this.model = new ChatOpenAI({ modelName: "gpt-4" ,openAIApiKey:this.openAIApiKey});
+        this.embeddings = new OpenAIEmbeddings({openAIApiKey:this.openAIApiKey});
+        this.splitDocs = await this.textSplitter.splitDocuments([
+                  new Document({ pageContent: this.finalText }),
+                ])
 
-       
+        this.vectorStore = await MemoryVectorStore.fromDocuments(this.splitDocs, this.embeddings);
+        const memory = new BufferMemory({
+            memoryKey: "chat_history",
+            returnMessages: true,
+            });
+
+        this.chain = ConversationalRetrievalQAChain.fromLLM(
+              this.model,
+              this.vectorStore.asRetriever(),
+              {
+                memory,
+              }
+            );
+        console.log(this.chain)
     }
 
 
     @SubscribeMessage('onConversation')
-    handleOnConversation(client: any, payload: any): string {
+    async handleOnConversation(client: any, payload: any) {
         console.log('message received', payload)
+
+        // run the chain
+        let result = await this.chain.call({
+        question: payload,
+        });
+        
+        console.log(result)
+        client.emit('answer', { result });
+
+        //save the conversation
+
+
         return 'Hello world!';
     }
 }

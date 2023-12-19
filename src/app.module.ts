@@ -9,12 +9,13 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { docItemService } from './doc_info.service';
 import { docItem } from './doc_info.entity';
-
+import { conversationItemService } from './conversation_info.service';
+import { conversationItem } from './conversation_info.entity';
 
 @Module({
   imports: [MessageExchangeModule,TestBackendModule,ConfigModule.forRoot({
     isGlobal: true
-  }),TypeOrmModule.forFeature([docItem]),TypeOrmModule.forRoot({
+  }),TypeOrmModule.forFeature([docItem,conversationItem]),TypeOrmModule.forRoot({
     type: 'postgres',
     host: 'pdfchat.postgres.database.azure.com',
     port: 5432,
@@ -25,6 +26,6 @@ import { docItem } from './doc_info.entity';
     synchronize: false,
   }),],
   controllers: [AppController],
-  providers: [AppService,EventsGateway,docItemService,],
+  providers: [AppService,EventsGateway,docItemService,conversationItemService],
 })
 export class AppModule {}

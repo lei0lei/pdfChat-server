@@ -4,7 +4,7 @@ import { AppService } from './app.service';
 import { FileUploadModule } from './file-upload/file-upload.module';
 import { MessageExchangeModule } from './message-exchange/message-exchange.module';
 import { TestBackendModule } from './test/test_backend_cors.module';
-
+import { EventsGateway } from './events.gateway';
 import { ConfigModule } from '@nestjs/config';
 
 
@@ -13,6 +13,6 @@ import { ConfigModule } from '@nestjs/config';
     isGlobal: true
   }),],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService,EventsGateway],
 })
 export class AppModule {}

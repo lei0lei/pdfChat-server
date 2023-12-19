@@ -9,13 +9,13 @@ import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { Document } from "langchain/document";
 
 
-const openAIApiKey = process.env.REACT_APP_openAIApiKey
-const textSplitter = new RecursiveCharacterTextSplitter({
-          chunkSize: 1500,
-          chunkOverlap: 200,
-        });
-const model = new ChatOpenAI({ modelName: "gpt-4" ,openAIApiKey:openAIApiKey});
-const embeddings = new OpenAIEmbeddings({openAIApiKey:openAIApiKey});
+// const openAIApiKey = process.env.REACT_APP_openAIApiKey
+// const textSplitter = new RecursiveCharacterTextSplitter({
+//           chunkSize: 1500,
+//           chunkOverlap: 200,
+//         });
+// const model = new ChatOpenAI({ modelName: "gpt-4" ,openAIApiKey:openAIApiKey});
+// const embeddings = new OpenAIEmbeddings({openAIApiKey:openAIApiKey});
 
 @Controller('messageExchange')
 export class MessageExchangeController {
@@ -26,35 +26,35 @@ export class MessageExchangeController {
     // 这里你可以实现处理和保存消息的逻辑
     // ...
 
-    const splitDocs = await textSplitter.splitDocuments([
-          new Document({ pageContent: body.docs }),
-        ])
+    // const splitDocs = await textSplitter.splitDocuments([
+    //       new Document({ pageContent: body.docs }),
+    //     ])
 
-    const vectorStore = await MemoryVectorStore.fromDocuments(splitDocs, embeddings);
-    const memory = new BufferMemory({
-      memoryKey: "chat_history",
-      returnMessages: true,
-    });
+    // const vectorStore = await MemoryVectorStore.fromDocuments(splitDocs, embeddings);
+    // const memory = new BufferMemory({
+    //   memoryKey: "chat_history",
+    //   returnMessages: true,
+    // });
 
-    const chain = ConversationalRetrievalQAChain.fromLLM(
-      model,
-      vectorStore.asRetriever(),
-      {
-        memory,
-      }
-    );
-    let result = await chain.call({
-      question: body.quiz,
-    });
-    if (result == null){
-      return {
-        statusCode: 200,
-        message: 'No result',
-      };}
+    // const chain = ConversationalRetrievalQAChain.fromLLM(
+    //   model,
+    //   vectorStore.asRetriever(),
+    //   {
+    //     memory,
+    //   }
+    // );
+    // let result = await chain.call({
+    //   question: body.quiz,
+    // });
+    // if (result == null){
+    //   return {
+    //     statusCode: 200,
+    //     message: 'No result',
+    //   };}
      
     return {
       statusCode: 200,
-      message: result,
+      message: 'result',
     };
   }
 }

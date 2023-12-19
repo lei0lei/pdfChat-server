@@ -11,8 +11,8 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 @WebSocketGateway({namespace: '/ws',
 cors: {
-    origin: 'http://localhost:3000', // 允许所有来源
-    methods: ["GET", "POST"], // 允许的方法
+    origin: '*', // 允许所有来源
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], // 允许的方法
     allowedHeaders: ["my-custom-header"], // 可选的头部
     credentials: true // 需要证书
 } })

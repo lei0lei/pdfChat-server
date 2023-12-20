@@ -56,6 +56,11 @@ function findMark(A){
     return A.substring(0, markIndex);
 }
 
+function isArrayNotEmpty(arr) {
+    // Check if arr is an array and if it's not empty
+    return Array.isArray(arr) && arr.length !== 0;
+}
+
 @WebSocketGateway({namespace: '/ws',
 cors: {
 origin: '*', // 允许所有来源
@@ -115,6 +120,7 @@ handleMessage(client: any, payload: any): string {
 @SubscribeMessage('onUpload')
 async handleOnUpload(client: any, payload: any) {
     console.log('message received')
+    this.docs=[];
     // 获取所有文本
     let fileTexts = payload.map(content => content.fileText);
 
@@ -153,6 +159,13 @@ async handleOnUpload(client: any, payload: any) {
           ])
         splitDocLists.push(splitDoc)
 
+        // 检查是否已存在文件
+        const fileExists = await this.docItemService.existDocs(fileContent.fileSha256);
+
+        if (fileExists) {console.log(`Document found: ${JSON.stringify(fileExists)}`);continue;}
+        //
+        // save the embeddings
+        // embeddings 写入后台数据库，由于typeorm对vector类型不支持，此处使用sql语句插入
         let vectorStores = await MemoryVectorStore.fromDocuments(splitDoc, this.embeddings);
         
         for (const vector of vectorStores.memoryVectors){
@@ -165,14 +178,6 @@ async handleOnUpload(client: any, payload: any) {
             vectorItemInstance.loc = vector.metadata
             newVectorItems.push(vectorItemInstance);
         }
-        // 检查是否已存在文件
-        const fileExists = await this.docItemService.existDocs(fileContent.fileSha256);
-
-        if (fileExists) {console.log(`Document found: ${JSON.stringify(fileExists)}`);continue;}
-        //
-        // save the embeddings
-        // embeddings 写入后台数据库，由于typeorm对vector类型不支持，此处使用sql语句插入
-
         docItemInstance.doc_available = true;
         docItemInstance.user_belonged = 'testman';
         // Add docItem to the array
@@ -183,9 +188,8 @@ async handleOnUpload(client: any, payload: any) {
     await checkDocs().catch(console.error);
 
     // Save the docItems to the database
-    
-    // const savedDocItems = await this.docItemService.insertDocs(newDocItems);
-    // const savedVectorItems = await this.openaiVectordbService.insertVectors(newVectorItems);
+    if (isArrayNotEmpty(newDocItems)){const savedDocItems = await this.docItemService.insertDocs(newDocItems);}
+    if (isArrayNotEmpty(newDocItems)){const savedVectorItems = await this.openaiVectordbService.insertVectors(newVectorItems);}
     //set the chain 
     this.splitDocs = splitDocLists.flat();
     // console.log(this.splitDocs)

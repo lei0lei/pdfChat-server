@@ -11,11 +11,12 @@ import { docItemService } from './doc_info.service';
 import { docItem } from './doc_info.entity';
 import { conversationItemService } from './conversation_info.service';
 import { conversationItem } from './conversation_info.entity';
-
+import { openaiVectordbService } from './openai_vectordb.service';
+import { openaiVectordbItem } from './openai_vectordb.entity';
 @Module({
   imports: [MessageExchangeModule,TestBackendModule,ConfigModule.forRoot({
     isGlobal: true
-  }),TypeOrmModule.forFeature([docItem,conversationItem]),TypeOrmModule.forRoot({
+  }),TypeOrmModule.forFeature([docItem,conversationItem,openaiVectordbItem]),TypeOrmModule.forRoot({
     type: 'postgres',
     host: 'pdfchat.postgres.database.azure.com',
     port: 5432,
@@ -26,6 +27,6 @@ import { conversationItem } from './conversation_info.entity';
     synchronize: false,
   }),],
   controllers: [AppController],
-  providers: [AppService,EventsGateway,docItemService,conversationItemService],
+  providers: [AppService,EventsGateway,docItemService,conversationItemService,openaiVectordbService],
 })
 export class AppModule {}

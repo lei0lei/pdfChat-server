@@ -12,7 +12,7 @@ export class docItem {
 
   @Column({
     type: "varchar",
-    length: 128
+    length: 512
   })
   doc_url: string;
 
@@ -38,7 +38,7 @@ export class docItem {
 
   @Column({
     type: 'varchar',
-    length: 4
+    length: 128
   })
   doc_type: string;
 }

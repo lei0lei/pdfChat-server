@@ -1,45 +1,31 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
-@Entity('doc_info')
-export class docItem {
+@Entity('openai_vectordb')
+export class openaiVectordbItem {
   @PrimaryGeneratedColumn('increment', { type: 'bigint' })
   id: number;
 
   @Column({
     type: "varchar",
-    length: 128
+    length: 64
   })
-  doc_name: string;
+  doc_id: string;
 
   @Column({
     type: "varchar",
-    length: 128
+    length: 32
   })
-  doc_url: string;
+  model: string;
 
   @Column('timetz')
   time_created: Date;
 
-  @Column({
-    type: 'varchar',
-    length: 64
-  })
-  doc_sha256: string;
+  @Column({ type: 'text' })
+  doc_string: string
 
-  @Column({
-    type: 'boolean'
-  })
-  doc_available: boolean;
+  @Column("double precision", { array: true })
+  vector: number[];
 
-  @Column({
-    type: "varchar",
-    length: 128
-  })
-  user_belonged: string;
-
-  @Column({
-    type: 'varchar',
-    length: 4
-  })
-  doc_type: string;
+  @Column('json')
+  loc: any;
 }
 

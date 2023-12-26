@@ -26,7 +26,7 @@ import { MemoryVectorStore } from "langchain/vectorstores/memory";
 import { OpenAIEmbeddings } from "langchain/embeddings/openai";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { Document } from "langchain/document";
-
+import { ScoreThresholdRetriever } from "langchain/retrievers/score_threshold";
 
 function findTextInString(A, B) {
     let bIndexInA = A.indexOf(B);
@@ -81,7 +81,7 @@ private conversationID;
 private openAIApiKey = process.env.REACT_APP_openAIApiKey;
 private textSplitter = new RecursiveCharacterTextSplitter({
     chunkSize: 1500,
-    chunkOverlap: 200,
+    chunkOverlap: 0,
   });;
 private model;
 private docs=[];
@@ -133,7 +133,7 @@ async handleOnUpload(client: any, payload: any) {
     this.splitDocs = await this.textSplitter.splitDocuments([
         new Document({ pageContent: this.finalText }),
       ])
-    
+
     //memoryvectors
     const newDocItems: docItem[] = [];
     //上传azure postgres doc-info数据库
@@ -157,6 +157,7 @@ async handleOnUpload(client: any, payload: any) {
         let splitDoc = await this.textSplitter.splitDocuments([
             new Document({ pageContent: fileContent.fileText }),
           ])
+        console.log(splitDoc)
         splitDocLists.push(splitDoc)
 
         // 检查是否已存在文件
@@ -223,10 +224,27 @@ async handleOnConversation(client: any, payload: any) {
     
     console.log(result)
     // client.emit('answer', { result });
-    const resultOne = await this.vectorStore.similaritySearch(result.text, 1);
+    // const resultOne = await this.vectorStore.similaritySearch(result.text, 1);
+    const retriever = ScoreThresholdRetriever.fromVectorStore(this.vectorStore, {
+        minSimilarityScore: 0.9, // Finds results with at least this similarity score
+        maxK: 4, // The maximum K value to use. Use it based to your chunk size to make sure you don't run out of tokens
+        kIncrement: 0, // How much to increase K by each time. It'll fetch N results, then N + kIncrement, then N + kIncrement * 2, etc.
+      });
+    // get relevent docs in vectorstore
+    const r_1 = await retriever.getRelevantDocuments(
+        result.text
+      );
+    let ref = []
     // console.log(resultOne[0].pageContent)
-    let r = findTextInString(this.finalText,resultOne[0].pageContent);
-    client.emit('answer', {result: result, refFilename:findMark(r.filename),refPage:findMark(r.pageNumber),refText:resultOne[0].pageContent});
+    for(let _r_1 of r_1){
+        let k = findTextInString(this.finalText,_r_1.pageContent);
+        ref.push({refFilename:findMark(k.filename),
+            refPage:findMark(k.pageNumber),
+            refText:_r_1.pageContent
+        })
+    }
+    // let r = findTextInString(this.finalText,resultOne[0].pageContent);
+    client.emit('answer', {result: result, ref:ref});
     //save the conversation
     const newconversationItems: conversationItem[] = [];
     const conversationItemInstance = new conversationItem();

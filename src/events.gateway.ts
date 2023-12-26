@@ -123,8 +123,9 @@ async handleFindFile(client: any, payload: any){
     console.log(payload)
     const fileExists = await this.docItemService.existDocs(payload);
     // client.emit('fileExists', {fileExists:fileExists});
-    console.log(fileExists)
-    return fileExists;
+    let isFileExists = (fileExists!==null)
+    
+    return isFileExists;
 }
 
 

@@ -157,7 +157,7 @@ async handleOnUpload(client: any, payload: any) {
         let splitDoc = await this.textSplitter.splitDocuments([
             new Document({ pageContent: fileContent.fileText }),
           ])
-        console.log(splitDoc)
+        // console.log(splitDoc)
         splitDocLists.push(splitDoc)
 
         // 检查是否已存在文件
@@ -222,7 +222,7 @@ async handleOnConversation(client: any, payload: any) {
     question: payload.message,
     });
     
-    console.log(result)
+    // console.log(result)
     // client.emit('answer', { result });
     // const resultOne = await this.vectorStore.similaritySearch(result.text, 1);
     const retriever = ScoreThresholdRetriever.fromVectorStore(this.vectorStore, {
@@ -243,6 +243,7 @@ async handleOnConversation(client: any, payload: any) {
             refText:_r_1.pageContent
         })
     }
+    console.log(ref)
     // let r = findTextInString(this.finalText,resultOne[0].pageContent);
     client.emit('answer', {result: result, ref:ref});
     //save the conversation

@@ -78,7 +78,7 @@ private seqenceID = 0;
 private finalText = ''
 private sessionID;
 private conversationID;
-private openAIApiKey = process.env.REACT_APP_openAIApiKey;
+private openAIApiKey = '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'//process.env.REACT_APP_openAIApiKey;
 private textSplitter = new RecursiveCharacterTextSplitter({
     chunkSize: 1500,
     chunkOverlap: 0,
@@ -117,6 +117,17 @@ handleMessage(client: any, payload: any): string {
     return 'Hello world!';
 }
 
+@SubscribeMessage('findFile')
+async handleFindFile(client: any, payload: any){
+    console.log('findFile', payload)
+    console.log(payload)
+    const fileExists = await this.docItemService.existDocs(payload);
+    // client.emit('fileExists', {fileExists:fileExists});
+    console.log(fileExists)
+    return fileExists;
+}
+
+
 @SubscribeMessage('onUpload')
 async handleOnUpload(client: any, payload: any) {
     console.log('message received')
@@ -140,7 +151,7 @@ async handleOnUpload(client: any, payload: any) {
     let splitDocLists = []
     const newVectorItems: openaiVectordbItem[] = [];
     // Iterate over the payload (each item should be a FileContent object)
-
+    
     const checkDocs = async () => {
     for (const fileContent of payload) {
         const docItemInstance = new docItem();
@@ -157,7 +168,7 @@ async handleOnUpload(client: any, payload: any) {
         let splitDoc = await this.textSplitter.splitDocuments([
             new Document({ pageContent: fileContent.fileText }),
           ])
-        // console.log(splitDoc)
+        
         splitDocLists.push(splitDoc)
 
         // 检查是否已存在文件
@@ -186,6 +197,7 @@ async handleOnUpload(client: any, payload: any) {
         newDocItems.push(docItemInstance);
         
     }}
+    
     await checkDocs().catch(console.error);
 
     // Save the docItems to the database
@@ -195,7 +207,7 @@ async handleOnUpload(client: any, payload: any) {
     this.splitDocs = splitDocLists.flat();
     // console.log(this.splitDocs)
     // this.vectorStore = await MemoryVectorStore.fromDocuments(this.splitDocs, this.embeddings);
-
+    
     this.vectorStore = await MemoryVectorStore.fromDocuments(this.splitDocs, this.embeddings);
     const memory = new BufferMemory({
         memoryKey: "chat_history",
@@ -222,13 +234,12 @@ async handleOnConversation(client: any, payload: any) {
     question: payload.message,
     });
     
-    // console.log(result)
     // client.emit('answer', { result });
     // const resultOne = await this.vectorStore.similaritySearch(result.text, 1);
     const retriever = ScoreThresholdRetriever.fromVectorStore(this.vectorStore, {
-        minSimilarityScore: 0.9, // Finds results with at least this similarity score
-        maxK: 4, // The maximum K value to use. Use it based to your chunk size to make sure you don't run out of tokens
-        kIncrement: 0, // How much to increase K by each time. It'll fetch N results, then N + kIncrement, then N + kIncrement * 2, etc.
+        minSimilarityScore: 0.6, // Finds results with at least this similarity score
+        maxK: 3, // The maximum K value to use. Use it based to your chunk size to make sure you don't run out of tokens
+        kIncrement: 1, // How much to increase K by each time. It'll fetch N results, then N + kIncrement, then N + kIncrement * 2, etc.
       });
     // get relevent docs in vectorstore
     const r_1 = await retriever.getRelevantDocuments(
@@ -243,7 +254,7 @@ async handleOnConversation(client: any, payload: any) {
             refText:_r_1.pageContent
         })
     }
-    console.log(ref)
+    
     // let r = findTextInString(this.finalText,resultOne[0].pageContent);
     client.emit('answer', {result: result, ref:ref});
     //save the conversation

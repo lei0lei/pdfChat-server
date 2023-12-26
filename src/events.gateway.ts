@@ -78,7 +78,7 @@ private seqenceID = 0;
 private finalText = ''
 private sessionID;
 private conversationID;
-private openAIApiKey = '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'//process.env.REACT_APP_openAIApiKey;
+private openAIApiKey = process.env.REACT_APP_openAIApiKey;
 private textSplitter = new RecursiveCharacterTextSplitter({
     chunkSize: 1500,
     chunkOverlap: 0,

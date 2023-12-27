@@ -69,35 +69,52 @@ allowedHeaders: ["my-custom-header"], // 可选的头部
 credentials: true // 需要证书
 } })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
-constructor(private readonly docItemService: docItemService,
-            private readonly conversationItemService: conversationItemService,
-            private readonly openaiVectordbService: openaiVectordbService,) {} 
-@WebSocketServer()
-server: Server;
-private seqenceID = 0;
-private finalText = ''
-private sessionID;
-private conversationID;
-private openAIApiKey = process.env.REACT_APP_openAIApiKey;
-private textSplitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 1500,
-    chunkOverlap: 0,
-  });;
-private model;
-private docs=[];
-private embeddings;
-private splitDocs;
-private vectorStore;
-private memory;
-private chain;
+    constructor(private readonly docItemService: docItemService,
+                private readonly conversationItemService: conversationItemService,
+                private readonly openaiVectordbService: openaiVectordbService,) {} 
+    @WebSocketServer()
+    server: Server;
+    private clients = new Map<string, any>();
+    // private seqenceID = 0;
+    // private finalText = ''
+    // private sessionID;
+    // private conversationID;
+    private openAIApiKey = process.env.REACT_APP_openAIApiKey;
+    private textSplitter = new RecursiveCharacterTextSplitter({
+        chunkSize: 1500,
+        chunkOverlap: 0,
+    });;
+    // private model;
+    // private docs=[];
+    // private embeddings;
+    // private splitDocs;
+    // private vectorStore;
+    // private memory;
+    // private chain;
 
 handleConnection(client: any, ...args: any[]) {
     console.log('Client connected:', client.id);
+    let sequenceID =0;
+    this.clients.set(client.id, {
+        sequenceID: sequenceID,
+        sessionID: uuidv4(),
+        conversationID: uuidv4(),
+        finalText: '',
+        model:null,
+        docs:[],
+        embeddings:null,
+        splitDocs:null,
+        vectorStore:null,
+        memory:null,
+        chain:null,
+    })
 
 }
 
 handleDisconnect(client: any) {
     console.log('Client disconnected:', client.id);
+    // 删除会话
+    this.clients.delete(client.id);
     // 关闭会话，将数据库中该conversationId对应的项变为expired
 
 }
@@ -105,10 +122,11 @@ handleDisconnect(client: any) {
 @SubscribeMessage('getSession')
 handleGetSession(client: any, payload: any): string {
     console.log('message received', payload)
-    this.sessionID = uuidv4();
-    this.conversationID = uuidv4();
-    client.emit('IDs', { sessionID: this.sessionID, conversationID: this.conversationID ,seqenceID:this.seqenceID});
-    return 'hello';
+    const clientState = this.clients.get(client.id);
+    client.emit('IDs', { sessionID: clientState.sessionID, 
+                        conversationID: clientState.conversationID ,
+                        seqenceID:clientState.seqenceID});
+    return 'Get Session from Server';
 }
 
 @SubscribeMessage('testmessage')
@@ -132,18 +150,19 @@ async handleFindFile(client: any, payload: any){
 @SubscribeMessage('onUpload')
 async handleOnUpload(client: any, payload: any) {
     console.log('message received')
-    this.docs=[];
+    let clientState = this.clients.get(client.id);
+    clientState.docs=[];
     // 获取所有文本
     let fileTexts = payload.map(content => content.fileText);
 
     // 使用join方法将所有的fileText合并为一个字符串
-    this.finalText = fileTexts.join('');
+    clientState.finalText = fileTexts.join('');
     // 构建对话模型
-    this.model = new ChatOpenAI({ modelName: "gpt-4" ,openAIApiKey:this.openAIApiKey});
-    this.embeddings = new OpenAIEmbeddings({openAIApiKey:this.openAIApiKey});
+    clientState.model = new ChatOpenAI({ modelName: "gpt-4" ,openAIApiKey:this.openAIApiKey});
+    clientState.embeddings = new OpenAIEmbeddings({openAIApiKey:this.openAIApiKey});
 
-    this.splitDocs = await this.textSplitter.splitDocuments([
-        new Document({ pageContent: this.finalText }),
+    clientState.splitDocs = await this.textSplitter.splitDocuments([
+        new Document({ pageContent: clientState.finalText }),
       ])
 
     //memoryvectors
@@ -163,7 +182,7 @@ async handleOnUpload(client: any, payload: any) {
         docItemInstance.doc_url = fileContent.fileUrl;
         docItemInstance.doc_type = fileContent.fileType;
         docItemInstance.doc_sha256 = fileContent.fileSha256;
-        this.docs.push(fileContent.fileSha256)
+        clientState.docs.push(fileContent.fileSha256)
         
         // 文件vectordb
         let splitDoc = await this.textSplitter.splitDocuments([
@@ -179,12 +198,12 @@ async handleOnUpload(client: any, payload: any) {
         //
         // save the embeddings
         // embeddings 写入后台数据库，由于typeorm对vector类型不支持，此处使用sql语句插入
-        let vectorStores = await MemoryVectorStore.fromDocuments(splitDoc, this.embeddings);
+        let vectorStores = await MemoryVectorStore.fromDocuments(splitDoc, clientState.embeddings);
         
         for (const vector of vectorStores.memoryVectors){
             const vectorItemInstance = new openaiVectordbItem();
             vectorItemInstance.doc_id = fileContent.fileSha256;
-            vectorItemInstance.model = this.embeddings.modelName||'null'
+            vectorItemInstance.model = clientState.embeddings.modelName||'null'
             vectorItemInstance.doc_string = vector.content
             
             vectorItemInstance.vector = vector.embedding
@@ -205,39 +224,40 @@ async handleOnUpload(client: any, payload: any) {
     if (isArrayNotEmpty(newDocItems)){const savedDocItems = await this.docItemService.insertDocs(newDocItems);}
     if (isArrayNotEmpty(newDocItems)){const savedVectorItems = await this.openaiVectordbService.insertVectors(newVectorItems);}
     //set the chain 
-    this.splitDocs = splitDocLists.flat();
+    clientState.splitDocs = splitDocLists.flat();
     // console.log(this.splitDocs)
     // this.vectorStore = await MemoryVectorStore.fromDocuments(this.splitDocs, this.embeddings);
     
-    this.vectorStore = await MemoryVectorStore.fromDocuments(this.splitDocs, this.embeddings);
+    clientState.vectorStore = await MemoryVectorStore.fromDocuments(clientState.splitDocs, clientState.embeddings);
     const memory = new BufferMemory({
         memoryKey: "chat_history",
         returnMessages: true,
         });
 
-    this.chain = ConversationalRetrievalQAChain.fromLLM(
-          this.model,
-          this.vectorStore.asRetriever(),
+    clientState.chain = ConversationalRetrievalQAChain.fromLLM(
+            clientState.model,
+            clientState.vectorStore.asRetriever(),
           {
             memory,
           }
         );
     // console.log(this.chain)
+    this.clients.set(client.id, clientState);
 }
 
 
 @SubscribeMessage('onConversation')
 async handleOnConversation(client: any, payload: any) {
     console.log('message received', payload)
-
+    let clientState = this.clients.get(client.id);
     // run the chain
-    let result = await this.chain.call({
+    let result = await clientState.chain.call({
     question: payload.message,
     });
     
     // client.emit('answer', { result });
     // const resultOne = await this.vectorStore.similaritySearch(result.text, 1);
-    const retriever = ScoreThresholdRetriever.fromVectorStore(this.vectorStore, {
+    const retriever = ScoreThresholdRetriever.fromVectorStore(clientState.vectorStore, {
         minSimilarityScore: 0.6, // Finds results with at least this similarity score
         maxK: 3, // The maximum K value to use. Use it based to your chunk size to make sure you don't run out of tokens
         kIncrement: 1, // How much to increase K by each time. It'll fetch N results, then N + kIncrement, then N + kIncrement * 2, etc.
@@ -249,7 +269,7 @@ async handleOnConversation(client: any, payload: any) {
     let ref = []
     // console.log(resultOne[0].pageContent)
     for(let _r_1 of r_1){
-        let k = findTextInString(this.finalText,_r_1.pageContent);
+        let k = findTextInString(clientState.finalText,_r_1.pageContent);
         ref.push({refFilename:findMark(k.filename),
             refPage:findMark(k.pageNumber),
             refText:_r_1.pageContent
@@ -261,17 +281,17 @@ async handleOnConversation(client: any, payload: any) {
     //save the conversation
     const newconversationItems: conversationItem[] = [];
     const conversationItemInstance = new conversationItem();
-    conversationItemInstance.conversation_id = this.conversationID;
+    conversationItemInstance.conversation_id = clientState.conversationID;
     conversationItemInstance.seq_id = payload.seq_id;
-    this.seqenceID = payload.seq_id;
+    clientState.seqenceID = payload.seq_id;
     conversationItemInstance.user_connected = 'testman';
-    conversationItemInstance.doc_connected = this.docs;
+    conversationItemInstance.doc_connected = clientState.docs;
     conversationItemInstance.quiz = payload;
     conversationItemInstance.answer = result;
     conversationItemInstance.expired = false
     newconversationItems.push(conversationItemInstance);
 
-
+    this.clients.set(client.id, clientState);
     const savedDocItems = await this.conversationItemService.insertDocs(newconversationItems);
     return 'Hello world!';
 }

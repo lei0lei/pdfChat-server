@@ -10,13 +10,13 @@ import { Server, Socket } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 
-import {docItemService} from './doc_info.service'
-import { docItem } from './doc_info.entity';
-import {conversationItemService} from './conversation_info.service'
-import { conversationItem } from './conversation_info.entity';
-import {openaiVectordbService} from './openai_vectordb.service'
-import { openaiVectordbItem } from './openai_vectordb.entity';
-
+import {docItemService} from './doc/doc_info.service'
+import { docItem } from './doc/doc_info.entity';
+import {conversationItemService} from './conversation/conversation_info.service'
+import { conversationItem } from './conversation/conversation_info.entity';
+import {openaiVectordbService} from './openai_vectordb/openai_vectordb.service'
+import { openaiVectordbItem } from './openai_vectordb/openai_vectordb.entity';
+import { jwtMiddleware } from './jwt.middleware';
 
 import { ConversationalRetrievalQAChain } from "langchain/chains";
 import { BufferMemory } from "langchain/memory";
@@ -74,23 +74,19 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 private readonly openaiVectordbService: openaiVectordbService,) {} 
     @WebSocketServer()
     server: Server;
+
+    // jwt
+    // afterInit(server: Server) {
+    //     this.server.use(jwtMiddleware);
+    //   }
+    //----
+
     private clients = new Map<string, any>();
-    // private seqenceID = 0;
-    // private finalText = ''
-    // private sessionID;
-    // private conversationID;
     private openAIApiKey = process.env.REACT_APP_openAIApiKey;
     private textSplitter = new RecursiveCharacterTextSplitter({
         chunkSize: 1500,
         chunkOverlap: 0,
-    });;
-    // private model;
-    // private docs=[];
-    // private embeddings;
-    // private splitDocs;
-    // private vectorStore;
-    // private memory;
-    // private chain;
+    });
 
 handleConnection(client: any, ...args: any[]) {
     console.log('Client connected:', client.id);
@@ -107,6 +103,7 @@ handleConnection(client: any, ...args: any[]) {
         vectorStore:null,
         memory:null,
         chain:null,
+        user: client.decoded,
     })
 
 }

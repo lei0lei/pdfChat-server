@@ -69,7 +69,7 @@ methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], // 允许的方�
 allowedHeaders: ["my-custom-header"], // 可选的头部
 credentials: true // 需要证书
 } })
-export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect,OnGatewayInit {
+export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     constructor(private readonly docItemService: docItemService,
                 private readonly conversationItemService: conversationItemService,
                 private readonly openaiVectordbService: openaiVectordbService,) {} 
@@ -77,9 +77,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect,O
     server: Server;
 
     // jwt
-    afterInit(server: Server) {
-        this.server.use(jwtMiddleware);
-      }
+    // afterInit(server: Server) {
+    //     this.server.use(jwtMiddleware);
+    //   }
     //----
 
     private clients = new Map<string, any>();

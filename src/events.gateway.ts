@@ -66,10 +66,10 @@ function isArrayNotEmpty(arr) {
 cors: {
 origin: '*', // 允许所有来源
 methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"], // 允许的方法
-allowedHeaders: ["my-custom-header"], // 可选的头部
+allowedHeaders: ["my-custom-header","Authorization"], // 可选的头部
 credentials: true // 需要证书
 } })
-export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect,OnGatewayInit {
     constructor(private readonly docItemService: docItemService,
                 private readonly conversationItemService: conversationItemService,
                 private readonly openaiVectordbService: openaiVectordbService,) {} 
@@ -77,9 +77,9 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     server: Server;
 
     // jwt
-    // afterInit(server: Server) {
-    //     this.server.use(jwtMiddleware);
-    //   }
+    afterInit(server: Server) {
+        this.server.use(jwtMiddleware);
+      }
     //----
 
     private clients = new Map<string, any>();

@@ -10,7 +10,6 @@ import { RolesGuard } from './auth/roles.guard';
 import { SignUpDto } from './auth/signup.dto';
 import { UsersService } from './users/users.service';
 
-
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService,

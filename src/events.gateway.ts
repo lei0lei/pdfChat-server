@@ -7,10 +7,10 @@ import {
     OnGatewayInit
   } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-
+import { ConsoleCallbackHandler } from "@langchain/core/tracers/console";
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
-
+import { Readable } from 'stream';
 import {docItemService} from './doc/doc_info.service'
 import { docItem } from './doc/doc_info.entity';
 import {conversationItemService} from './conversation/conversation_info.service'
@@ -18,7 +18,7 @@ import { conversationItem } from './conversation/conversation_info.entity';
 import {openaiVectordbService} from './openai_vectordb/openai_vectordb.service'
 import { openaiVectordbItem } from './openai_vectordb/openai_vectordb.entity';
 import { jwtMiddleware } from './jwt.middleware';
-
+import { CallbackManager } from "@langchain/core/callbacks/manager";
 import { ConversationalRetrievalQAChain } from "langchain/chains";
 import { BufferMemory } from "langchain/memory";
 import { ChatOpenAI } from "langchain/chat_models/openai";
@@ -156,7 +156,16 @@ async handleOnUpload(client: any, payload: any) {
     // 使用join方法将所有的fileText合并为一个字符串
     clientState.finalText = fileTexts.join('');
     // 构建对话模型
-    clientState.model = new ChatOpenAI({ modelName: "gpt-4" ,openAIApiKey:this.openAIApiKey});
+    clientState.model = new ChatOpenAI({ modelName: "gpt-4" ,openAIApiKey:this.openAIApiKey,streaming:true,callbackManager: CallbackManager.fromHandlers({
+        async handleLLMNewToken(token) {
+          console.log({ token });
+          client.emit('answer-token', { token ,'end':false}); 
+        },
+        async handleLLMEnd(output) {
+        //   console.log("End of stream.", output);
+          client.emit('answer-token', {'token':null, 'end': true }); 
+        },
+      }),});
     clientState.embeddings = new OpenAIEmbeddings({openAIApiKey:this.openAIApiKey});
 
     clientState.splitDocs = await this.textSplitter.splitDocuments([
@@ -251,10 +260,14 @@ async handleOnConversation(client: any, payload: any) {
     // run the chain
     let result = await clientState.chain.call({
     question: payload.message,
+    
     });
+    console.log(result)
     
     // client.emit('answer', { result });
     // const resultOne = await this.vectorStore.similaritySearch(result.text, 1);
+
+    //--------------------
     const retriever = ScoreThresholdRetriever.fromVectorStore(clientState.vectorStore, {
         minSimilarityScore: 0.6, // Finds results with at least this similarity score
         maxK: 3, // The maximum K value to use. Use it based to your chunk size to make sure you don't run out of tokens
@@ -275,6 +288,7 @@ async handleOnConversation(client: any, payload: any) {
     }
     
     // let r = findTextInString(this.finalText,resultOne[0].pageContent);
+    // 流式传输
     client.emit('answer', {result: result, ref:ref});
     //save the conversation
     const newconversationItems: conversationItem[] = [];
